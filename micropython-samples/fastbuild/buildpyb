@@ -1,0 +1,53 @@
+#! /bin/bash
+# Detect attached pyboard variant build and deploy
+# Assumes only one device attached and that this will appear as /dev/pyboard (udev rule)
+# requires pyb_check
+# Also requires the pyboard.py utility to be on the path (micropython/tools/pyboard.py)
+
+MPDEVICE='/dev/pyboard'
+
+# Determine board type
+BOARD=""
+if pyb_check $MPDEVICE PYBV11
+then
+    BOARD="PYBV11"
+fi
+if pyb_check $MPDEVICE PYBV10 
+then
+    BOARD="PYBV10"
+fi
+if pyb_check $MPDEVICE PYBLITEV10
+then
+    BOARD="PYBLITEV10"
+fi
+echo Building for $BOARD
+
+# Check for user override of frozen directory
+if [ $FROZEN_DIR ]
+then
+    echo Frozen modules located in $FROZEN_DIR
+else
+    FROZEN_DIR='modules'
+fi
+
+if [ $BOARD ]
+then
+    cd $MPDIR/ports/stm32
+    if [ $# -eq 1 ] && [ $1 = "--clean" ]
+    then
+        make BOARD=$BOARD clean
+    fi
+    if make -j 8 BOARD=$BOARD FROZEN_MPY_DIR=$FROZEN_DIR && pyb_boot $MPDEVICE
+    then
+        sleep 1
+        make BOARD=$BOARD deploy
+        cd -
+        sleep 1
+        rshell
+    else
+        echo Build failure
+    fi
+else
+    echo Incorrect board type
+fi
+

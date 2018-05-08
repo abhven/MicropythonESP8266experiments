@@ -1,0 +1,23 @@
+#!/usr/bin/python3
+
+# Called from buildpyb
+# Put pyboard into DFU mode.
+
+import sys
+import os
+mp = os.getenv('MPDIR')
+device = os.getenv('MPDEVICE')
+sys.path.append(''.join((mp, '/tools')))
+import pyboard
+def main():
+    pyb=pyboard.Pyboard(device)
+    pyb.enter_raw_repl()
+    try:
+        pyb.exec_raw('pyb.bootloader()')
+        print('Failed to enter DFU mode')
+    except Exception:  # It will throw one!
+        pass
+
+if __name__ == "__main__":
+    main()
+
